@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
+import { Button } from '../../components/ui'
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<any>(null)
   const [health, setHealth] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [syncing, setSyncing] = useState(false)
+  const [syncResult, setSyncResult] = useState<string | null>(null)
 
   useEffect(() => {
     const headers = { 'x-admin-token': localStorage.getItem('admin_token') || '' }
@@ -26,6 +29,33 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Dashboard</h1>
+      <div className="flex gap-3">
+        <Button
+          onClick={async () => {
+            try {
+              setSyncing(true)
+              setSyncResult(null)
+              const res = await fetch('/api/admin/shopify/sync', {
+                method: 'POST',
+                headers: { 'x-admin-token': localStorage.getItem('admin_token') || '' }
+              })
+              const data = await res.json()
+              setSyncing(false)
+              setSyncResult(res.ok ? `Synced ${data.count || 0} products from Shopify` : (data.error || 'Sync failed'))
+              const statsRes = await fetch('/api/admin/stats', { headers: { 'x-admin-token': localStorage.getItem('admin_token') || '' } })
+              const statsData = await statsRes.json()
+              setStats(statsData)
+            } catch {
+              setSyncing(false)
+              setSyncResult('Sync failed')
+            }
+          }}
+          disabled={syncing}
+        >
+          {syncing ? 'Syncing…' : 'Pull Shopify Data'}
+        </Button>
+        {syncResult && <span className="text-sm text-gray-600 dark:text-gray-400">{syncResult}</span>}
+      </div>
       
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {/* System Health */}

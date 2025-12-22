@@ -89,5 +89,53 @@ export const shopifyService = {
       console.error('Error fetching Shopify products:', error);
       throw error;
     }
+  },
+  async createProduct(product: {
+    name: string
+    description?: string
+    price: number
+    category?: string
+    images?: string[]
+    sku?: string
+  }) {
+    const config = await this.getConfig()
+    if (!config) {
+      throw new Error('Shopify is not configured')
+    }
+    const shopify = shopifyApi({
+      apiKey: config.apiKey || 'dummy_key',
+      apiSecretKey: config.apiSecret || 'dummy_secret',
+      scopes: ['write_products'],
+      hostName: config.shopDomain,
+      apiVersion: ApiVersion.January25,
+      isEmbeddedApp: false,
+    })
+    const session = new Session({
+      id: 'offline_session',
+      shop: config.shopDomain,
+      state: 'state',
+      isOnline: false,
+      accessToken: config.accessToken,
+    })
+    const client = new shopify.clients.Rest({ session })
+    const payload: any = {
+      product: {
+        title: product.name,
+        body_html: product.description || '',
+        product_type: product.category || 'Uncategorized',
+        variants: [
+          {
+            price: String(product.price ?? 0),
+            sku: product.sku || '',
+          },
+        ],
+        images: (product.images && product.images.length > 0) ? product.images.map((src) => ({ src })) : [],
+      },
+    }
+    const res = await client.post({
+      path: 'products',
+      data: payload,
+    })
+    return (res.body as any).product
   }
 };

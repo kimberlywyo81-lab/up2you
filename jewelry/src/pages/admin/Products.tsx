@@ -212,6 +212,22 @@ export default function AdminProducts() {
                   </div>
                 </div>
                 <div className="ml-5 flex-shrink-0 flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        const res = await fetch(`/api/admin/shopify/push/${product.id}`, {
+                          method: 'POST',
+                          headers
+                        })
+                        const data = await res.json()
+                        alert(data.id ? `Added to Shopify: ${data.title || data.id}` : 'Failed to add to Shopify')
+                      } catch (err) {
+                      }
+                    }}
+                  >
+                    Add to Shopify
+                  </Button>
                   <Button size="sm" variant="secondary" onClick={() => startEdit(product)}>Edit</Button>
                   <Button size="sm" variant="primary" className="bg-red-600 hover:bg-red-700 focus:ring-red-500" onClick={() => handleDelete(product.id)}>Delete</Button>
                 </div>

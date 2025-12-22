@@ -276,4 +276,43 @@ router.post('/shopify/sync', async (req, res) => {
   }
 })
 
+router.post('/shopify/push/:id', async (req, res) => {
+  try {
+    const configured = await shopifyService.isConfigured()
+    if (!configured) {
+      res.status(503).json({ error: 'Shopify integration not configured' })
+      return
+    }
+    if (!useDb) {
+      res.status(503).json({ error: 'Database not configured' })
+      return
+    }
+    const { id } = req.params
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('id', id)
+      .single()
+    if (error) {
+      res.status(500).json({ error: error.message })
+      return
+    }
+    if (!data) {
+      res.status(404).json({ error: 'Product not found' })
+      return
+    }
+    const created = await shopifyService.createProduct({
+      name: data.name,
+      description: data.description,
+      price: Number(data.price),
+      category: data.category,
+      images: Array.isArray(data.images) ? data.images : [],
+      sku: data.sku,
+    })
+    res.json({ id: created?.id, title: created?.title })
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 export const adminRoutes = router

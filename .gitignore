@@ -1,7 +1,20 @@
 # Up2You deployment
 deploy/minimal
 
-### AL ###
+# Node and builds
+node_modules/
+dist/
+build/
+
+# OS files
+.DS_Store
+**/.DS_Store
+
+# Env files
+.env
+**/.env
+!.env.example
+
 #Template for AL projects for Dynamics 365 Business Central
 #launch.json folder
 .vscode/

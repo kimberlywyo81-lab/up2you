@@ -44,7 +44,9 @@ app.get('/api/auth/google/start', (req, res) => {
   const clientId = process.env.GOOGLE_CLIENT_ID || ''
   const redirectUri = process.env.GOOGLE_REDIRECT_URI || ''
   const scope = 'openid email profile'
-  const state = crypto.randomBytes(16).toString('hex')
+  const from = typeof req.query.from === 'string' ? req.query.from : ''
+  const safeFrom = typeof from === 'string' && from.startsWith('/') ? from : ''
+  const state = safeFrom || '\/admin'
   if (!clientId || !redirectUri) {
     res.status(500).json({ error: 'Google OAuth not configured' })
     return
@@ -64,6 +66,7 @@ app.get('/api/auth/google/start', (req, res) => {
 
 app.get('/api/auth/google/callback', async (req, res) => {
   const code = (req.query.code as string) || ''
+  const state = (req.query.state as string) || ''
   const clientId = process.env.GOOGLE_CLIENT_ID || ''
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET || ''
   const redirectUri = process.env.GOOGLE_REDIRECT_URI || ''
@@ -115,7 +118,8 @@ app.get('/api/auth/google/callback', async (req, res) => {
     const token = `${b64}.${sig}`
     const secure = (process.env.NODE_ENV || '').toLowerCase() === 'production'
     res.cookie('admin_session', token, { httpOnly: true, sameSite: 'lax', secure, path: '/' })
-    res.redirect('/api/admin/health')
+    const dest = typeof state === 'string' && state.startsWith('/') ? state : '/admin'
+    res.redirect(dest)
   } catch (e: any) {
     res.status(500).json({ error: 'Google auth error', message: e.message })
   }

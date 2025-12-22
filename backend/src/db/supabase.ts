@@ -4,7 +4,7 @@ import dotenv from 'dotenv'
 dotenv.config()
 
 const supabaseUrl = process.env.SUPABASE_URL
-const supabaseKey = process.env.SUPABASE_ANON_KEY // or SERVICE_ROLE_KEY for admin tasks
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseKey) {
   // It's okay to fail here during build/dev if vars aren't set, 

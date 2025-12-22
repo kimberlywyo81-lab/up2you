@@ -247,7 +247,7 @@ router.post('/shopify/sync', async (req, res) => {
       return
     }
     const products = await shopifyService.getProducts()
-    const payload = products.map(p => ({
+    const payload = products.map((p: any) => ({
       name: p.name,
       description: p.description,
       price: p.price,

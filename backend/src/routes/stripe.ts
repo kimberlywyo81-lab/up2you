@@ -8,7 +8,7 @@ dotenv.config();
 
 const router = Router();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2025-11-17.clover', // Updated to match type definition
+  apiVersion: '2025-12-15.clover',
 });
 
 // Create Payment Intent

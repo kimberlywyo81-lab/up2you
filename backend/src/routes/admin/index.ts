@@ -247,21 +247,34 @@ router.post('/shopify/sync', async (req, res) => {
       return
     }
     const products = await shopifyService.getProducts()
-    const payload = products.map((p: any) => ({
-      name: p.name,
-      description: p.description,
-      price: p.price,
-      category: p.category,
-      metal_type: p.metal_type,
-      gemstone: p.gemstone,
-      weight: p.weight,
-      images: p.images,
-      sku: p.sku,
-      stock_quantity: p.stock_quantity,
-      is_featured: p.is_featured,
-      is_bundle: p.is_bundle,
-      bundle_discount: p.bundle_discount,
-    }))
+
+    // Ensure unique SKUs by using shopify ID if SKU is empty or duplicate
+    const seenSkus = new Set<string>()
+    const payload = products.map((p: any) => {
+      let sku = p.sku || p.id // Use shopify ID if SKU is empty
+      // If SKU already seen, append shopify ID to make it unique
+      if (seenSkus.has(sku)) {
+        sku = p.id
+      }
+      seenSkus.add(sku)
+
+      return {
+        name: p.name,
+        description: p.description,
+        price: p.price,
+        category: p.category,
+        metal_type: p.metal_type,
+        gemstone: p.gemstone,
+        weight: p.weight,
+        images: p.images,
+        sku: sku,
+        stock_quantity: p.stock_quantity,
+        is_featured: p.is_featured,
+        is_bundle: p.is_bundle,
+        bundle_discount: p.bundle_discount,
+      }
+    })
+
     const { data, error } = await supabase
       .from('products')
       .upsert(payload, { onConflict: 'sku' })

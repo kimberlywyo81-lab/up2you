@@ -41,30 +41,23 @@ export const shopifyService = {
       throw new Error('Shopify is not configured');
     }
 
-    const shopify = shopifyApi({
-      apiKey: config.apiKey || 'dummy_key',
-      apiSecretKey: config.apiSecret || 'dummy_secret',
-      scopes: ['read_products'],
-      hostName: config.shopDomain,
-      apiVersion: ApiVersion.January25,
-      isEmbeddedApp: false,
-    });
-
-    const session = new Session({
-      id: 'offline_session',
-      shop: config.shopDomain,
-      state: 'state',
-      isOnline: false,
-      accessToken: config.accessToken,
-    });
-
     try {
-      const client = new shopify.clients.Rest({ session });
-      const response = await client.get({
-        path: 'products',
+      // Use direct HTTP request instead of SDK (more reliable with custom app credentials)
+      const url = `https://${config.shopDomain}/admin/api/2025-01/products.json`;
+      const response = await fetch(url, {
+        headers: {
+          'X-Shopify-Access-Token': config.accessToken,
+          'Content-Type': 'application/json',
+        },
       });
 
-      const products = (response.body as any).products;
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Shopify API error (${response.status}): ${errorText}`);
+      }
+
+      const data = await response.json();
+      const products = data.products;
 
       // Map Shopify products to our internal format
       return products.map((p: any) => ({

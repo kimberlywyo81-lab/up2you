@@ -14,8 +14,11 @@ export default function AdminProducts() {
     stock_quantity: '',
     category: '',
     metal_type: '',
-    gemstone: ''
+    gemstone: '',
+    images: [] as string[]
   })
+  const [imageUrl, setImageUrl] = useState('')
+  const [uploading, setUploading] = useState(false)
 
   const headers = {
     'x-admin-token': localStorage.getItem('admin_token') || '',
@@ -38,6 +41,45 @@ export default function AdminProducts() {
   useEffect(() => {
     fetchProducts()
   }, [])
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploading(true)
+    const formDataUpload = new FormData()
+    formDataUpload.append('image', file)
+
+    try {
+      const res = await fetch('/api/admin/upload', {
+        method: 'POST',
+        headers: {
+          'x-admin-token': localStorage.getItem('admin_token') || ''
+        },
+        body: formDataUpload
+      })
+      const data = await res.json()
+      if (data.url) {
+        setFormData({...formData, images: [...formData.images, data.url]})
+      }
+    } catch (err) {
+      console.error('Upload failed:', err)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleAddImageUrl = () => {
+    if (imageUrl.trim()) {
+      setFormData({...formData, images: [...formData.images, imageUrl.trim()]})
+      setImageUrl('')
+    }
+  }
+
+  const removeImage = (index: number) => {
+    const newImages = formData.images.filter((_, i) => i !== index)
+    setFormData({...formData, images: newImages})
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -67,8 +109,10 @@ export default function AdminProducts() {
           stock_quantity: '',
           category: '',
           metal_type: '',
-          gemstone: ''
+          gemstone: '',
+          images: []
         })
+        setImageUrl('')
         fetchProducts()
       }
     } catch (err) {
@@ -98,8 +142,10 @@ export default function AdminProducts() {
       stock_quantity: p.stock_quantity,
       category: p.category || '',
       metal_type: p.metal_type || '',
-      gemstone: p.gemstone || ''
+      gemstone: p.gemstone || '',
+      images: p.images || []
     })
+    setImageUrl('')
   }
 
   if (loading) return <div>Loading products...</div>
@@ -181,6 +227,59 @@ export default function AdminProducts() {
                 onChange={(value) => setFormData({...formData, gemstone: value})}
               />
             </div>
+
+            {/* Image Upload Section */}
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Product Images</label>
+
+              {/* Current Images */}
+              {formData.images.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {formData.images.map((img, idx) => (
+                    <div key={idx} className="relative">
+                      <img src={img} alt="" className="w-20 h-20 object-cover rounded border" />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(idx)}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Upload from computer */}
+              <div>
+                <label className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-neutral-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-600 cursor-pointer">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    disabled={uploading}
+                  />
+                  {uploading ? 'Uploading...' : '📤 Upload Image'}
+                </label>
+                <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">(Max 5MB)</span>
+              </div>
+
+              {/* Add image URL */}
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  placeholder="Or paste image URL"
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-neutral-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-neutral-700 dark:text-white"
+                />
+                <Button type="button" variant="secondary" onClick={handleAddImageUrl} disabled={!imageUrl.trim()}>
+                  Add URL
+                </Button>
+              </div>
+            </div>
+
             <div className="flex justify-end gap-2">
               <Button type="button" variant="secondary" onClick={() => setEditing(null)}>Cancel</Button>
               <Button type="submit">Save</Button>
@@ -194,6 +293,16 @@ export default function AdminProducts() {
           {products.map((product) => (
             <li key={product.id}>
               <div className="px-4 py-4 flex items-center sm:px-6">
+                {/* Product thumbnail */}
+                {product.images && product.images.length > 0 && (
+                  <div className="mr-4 flex-shrink-0">
+                    <img
+                      src={product.images[0]}
+                      alt={product.name}
+                      className="w-16 h-16 object-cover rounded border border-gray-200 dark:border-neutral-700"
+                    />
+                  </div>
+                )}
                 <div className="min-w-0 flex-1 sm:flex sm:items-center sm:justify-between">
                   <div>
                     <div className="flex text-sm">
@@ -206,6 +315,9 @@ export default function AdminProducts() {
                       <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                         <p>
                           ${product.price} • Stock: {product.stock_quantity}
+                          {product.images && product.images.length > 0 && (
+                            <span className="ml-2">• {product.images.length} image{product.images.length > 1 ? 's' : ''}</span>
+                          )}
                         </p>
                       </div>
                     </div>

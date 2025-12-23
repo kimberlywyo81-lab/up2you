@@ -394,6 +394,8 @@ export default function AdminProducts() {
                 <div className="ml-5 flex-shrink-0 flex gap-2">
                   <Button
                     size="sm"
+                    variant="primary"
+                    className="bg-green-600 hover:bg-green-700 focus:ring-green-500"
                     onClick={async () => {
                       try {
                         const res = await fetch(`/api/admin/shopify/push/${product.id}`, {
@@ -401,12 +403,13 @@ export default function AdminProducts() {
                           headers
                         })
                         const data = await res.json()
-                        alert(data.id ? `Added to Shopify: ${data.title || data.id}` : 'Failed to add to Shopify')
+                        alert(data.id ? `Pushed to Shopify: ${data.title || data.id}` : 'Failed to push to Shopify')
                       } catch (err) {
+                        alert('Error pushing to Shopify')
                       }
                     }}
                   >
-                    Add to Shopify
+                    Push ⬆️
                   </Button>
                   <Button size="sm" variant="secondary" onClick={() => startEdit(product)}>Edit</Button>
                   <Button size="sm" variant="primary" className="bg-red-600 hover:bg-red-700 focus:ring-red-500" onClick={() => handleDelete(product.id)}>Delete</Button>
